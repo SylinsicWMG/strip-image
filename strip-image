@@ -287,7 +287,7 @@ function build_stripped_image_h(){
   echo "ADD export_h /" >> $DIR/Dockerfile
 
   for DOCKERFILE in $DOCKERFILES ; do
-      sed ':x; /\\$/ { N; s/\\\n//; tx }' "$(eval echo $DOCKERFILE)" \	
+      sed ':x; /\\$/ { N; s/\\\n//; tx }' "$(eval echo $DOCKERFILE)" \
         | grep -v '^\(FROM\|ADD\|COPY\)' \
         >> $DIR/Dockerfile
   done
