@@ -72,7 +72,7 @@
 # EXTENDED BY
 #  Matt Walker
 #  University of Warwick
-#  1) Removed 'run\|' from docker 'grep' on line 288 so RUN commands are transferred to new Dockerfile
+#  1) Maintain permissions on all files - building the docker image requires sudo
 #  2) Fix input file globs to be expanded on the container itself
 
 
@@ -197,15 +197,14 @@ function list_all_packages_c() {
 
 function exec_c() {
   parse_commandline_c "$@"
-  tar -czf - $(
+  tar -czh${VERBOSE}f $EXPORT_DIR/fs.tar.gz $(
 
     (
       list_all_packages_c $PACKAGES
       list_dependencies_c $FILES
     )  | sort -u | tee $EXPORT_DIR/stripped-manifest
 
-  ) | (cd $EXPORT_DIR && tar -xzh${VERBOSE}f -)
-  chown -R $CHOWN_UID /export_c
+  )
 }
 
 function parse_commandline_h() {
@@ -284,11 +283,11 @@ function run_container_h(){
 
 function build_stripped_image_h(){
   echo "FROM scratch" >  $DIR/Dockerfile
-  echo "ADD export_h /" >> $DIR/Dockerfile
+  echo "ADD export_h/fs.tar.gz /" >> $DIR/Dockerfile
 
   for DOCKERFILE in $DOCKERFILES ; do
       sed ':x; /\\$/ { N; s/\\\n//; tx }' "$(eval echo $DOCKERFILE)" \
-        | grep -v '^\(FROM\|ADD\|COPY\)' \
+        | grep -v '^\(FROM\|RUN\|ADD\|COPY\)' \
         >> $DIR/Dockerfile
   done
 
@@ -298,7 +297,7 @@ function build_stripped_image_h(){
 
   (
     cd $DIR
-    docker build --no-cache $TARGET_IMAGE_NAME .
+    sudo docker build --no-cache $TARGET_IMAGE_NAME .
   ) || debug_break "docker build had unsuccesful exit"
 }
 
